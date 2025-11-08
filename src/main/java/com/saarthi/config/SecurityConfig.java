@@ -18,7 +18,7 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("https://saarthi-frontend-henna.vercel.app")  // React dev URL
+                        .allowedOrigins("https://saarthi-frontend-qlgcwfsou-shivanshs-projects-a62d80c7.vercel.app")  // React dev URL
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);
