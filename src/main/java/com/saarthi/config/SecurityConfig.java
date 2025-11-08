@@ -11,32 +11,29 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class SecurityConfig {
 
-    // ✅ Allow frontend (React) to access API
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("https://saarthi-frontend-henna.vercel.app\r\n"
-                        		+ "")  // React dev URL
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedOrigins("https://saarthi-frontend-henna.vercel.app")
+                        .allowedMethods("*")
                         .allowedHeaders("*")
                         .allowCredentials(true);
             }
         };
     }
 
-    // ✅ Security rules
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> {}) // ✅ Enable CORS support
+                .cors(cors -> cors.enable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()  // Signup / Login allowed
-                        .anyRequest().permitAll()                 // Other APIs allowed for now
+                        .requestMatchers("/auth/**").permitAll() // ✅ Correct endpoint now
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(httpBasic -> httpBasic.disable())
