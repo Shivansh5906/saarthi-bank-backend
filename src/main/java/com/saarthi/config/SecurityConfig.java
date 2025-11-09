@@ -40,7 +40,7 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .httpBasic(http -> http.disable())
+                .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(form -> form.disable());
 
         return http.build();
