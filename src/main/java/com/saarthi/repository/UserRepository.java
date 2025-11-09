@@ -6,7 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.saarthi.model.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
-    User findByEmail(String email);
+	User findByEmailIgnoreCase(String email);
+
     Optional<User> findByAccount_AccountNumber(String accountNumber);
     
 }

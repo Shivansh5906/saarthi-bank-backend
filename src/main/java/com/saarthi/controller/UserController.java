@@ -34,7 +34,7 @@ public class UserController {
         token = token.replace("Bearer ", "");
         String email = jwtUtil.extractEmail(token);
 
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmailIgnoreCase(email);
 
         return new UserResponse(
                 user.getId(),

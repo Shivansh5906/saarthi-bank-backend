@@ -35,7 +35,7 @@ public class PdfController {
        
         String email = jwtUtil.extractEmail(token);
 
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmailIgnoreCase(email);
         List<Transaction> transactions = transactionRepository.findByUserOrderByTimestampDesc(user);
 
         response.setContentType("application/pdf");

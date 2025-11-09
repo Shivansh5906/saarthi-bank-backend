@@ -37,14 +37,16 @@ public class UserServiceImpl implements UserService {
     @Override
     public String signup(SignupRequest request) {
 
-        if (userRepository.findByEmail(request.getEmail().toLowerCase()) != null) {
+        String email = request.getEmail().trim().toLowerCase(); // lower save
+
+        if (userRepository.findByEmailIgnoreCase(email) != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already registered!");
         }
 
         User user = new User();
         user.setName(request.getName());
-        user.setEmail(request.getEmail().toLowerCase()); // ✅ Email normalized
-        user.setPassword(request.getPassword());
+        user.setEmail(email);
+        user.setPassword(request.getPassword()); // ✅ Normal password
 
         userRepository.save(user);
 
@@ -52,7 +54,6 @@ public class UserServiceImpl implements UserService {
         acc.setUser(user);
         acc.setAccountNumber("AC" + System.currentTimeMillis());
         acc.setBalance(0.0);
-
         accountRepository.save(acc);
 
         return "Signup Successful! Account Created: " + acc.getAccountNumber();
@@ -61,8 +62,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public String login(LoginRequest request) {
 
-        String email = request.getEmail().trim().toLowerCase(); // ✅ Normalize Email
-        User user = userRepository.findByEmail(email);
+        String email = request.getEmail().trim();
+        User user = userRepository.findByEmailIgnoreCase(email);
 
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User Not Found!");
@@ -72,14 +73,13 @@ public class UserServiceImpl implements UserService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect Password!");
         }
 
-        return jwtUtil.generateToken(user.getEmail()); // ✅ return only token
+        return jwtUtil.generateToken(user.getEmail()); // ✅ Token return
     }
 
-    // ✅ Deposit
     @Transactional
     @Override
     public String deposit(String email, double amount) {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmailIgnoreCase(email);
         if (user == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User Not Found!");
 
         Account account = user.getAccount();
@@ -91,11 +91,10 @@ public class UserServiceImpl implements UserService {
         return "₹" + amount + " deposited successfully!";
     }
 
-    // ✅ Withdraw
     @Transactional
     @Override
     public String withdraw(String email, double amount) {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmailIgnoreCase(email);
         if (user == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User Not Found!");
 
         Account account = user.getAccount();
@@ -110,12 +109,10 @@ public class UserServiceImpl implements UserService {
         return "₹" + amount + " withdrawn successfully!";
     }
 
-    // ✅ Transfer
     @Transactional
     @Override
     public String transfer(String senderEmail, String receiverAccountNumber, double amount) {
-
-        User sender = userRepository.findByEmail(senderEmail);
+        User sender = userRepository.findByEmailIgnoreCase(senderEmail);
         if (sender == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender Not Found!");
 
         User receiver = userRepository.findByAccount_AccountNumber(receiverAccountNumber)
@@ -138,7 +135,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse getUserDetails(String email) {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmailIgnoreCase(email);
         if (user == null) return null;
         return new UserResponse(user.getId(), user.getName(), user.getEmail(),
                 user.getAccount().getAccountNumber(), user.getAccount().getBalance());
@@ -146,7 +143,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<Transaction> getTransactions(String email) {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmailIgnoreCase(email);
         if (user == null) return null;
         return transactionRepository.findByUserOrderByTimestampDesc(user);
     }
