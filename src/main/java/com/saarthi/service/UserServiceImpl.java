@@ -37,7 +37,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public String signup(SignupRequest request) {
 
-        String email = request.getEmail().trim().toLowerCase(); // lower save
+        String email = request.getEmail().trim().toLowerCase();
 
         if (userRepository.findByEmailIgnoreCase(email) != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already registered!");
@@ -46,7 +46,7 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setName(request.getName());
         user.setEmail(email);
-        user.setPassword(request.getPassword()); // ✅ Normal password
+        user.setPassword(request.getPassword());
 
         userRepository.save(user);
 
@@ -61,8 +61,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String login(LoginRequest request) {
-
-        String email = request.getEmail().trim();
+        String email = request.getEmail().trim().toLowerCase();
         User user = userRepository.findByEmailIgnoreCase(email);
 
         if (user == null) {
@@ -73,7 +72,7 @@ public class UserServiceImpl implements UserService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect Password!");
         }
 
-        return jwtUtil.generateToken(user.getEmail()); // ✅ Token return
+        return jwtUtil.generateToken(user.getEmail());
     }
 
     @Transactional
@@ -87,14 +86,9 @@ public class UserServiceImpl implements UserService {
         accountRepository.save(account);
 
         transactionRepository.save(new Transaction(
-                "DEPOSIT",
-                amount,
-                "Amount Deposited",
-                "-",
-                user.getAccount().getAccountNumber(),
-                user
+            "DEPOSIT", amount, "Amount Deposited",
+            "-", account.getAccountNumber(), user
         ));
-
 
         return "₹" + amount + " deposited successfully!";
     }
@@ -113,13 +107,10 @@ public class UserServiceImpl implements UserService {
         accountRepository.save(account);
 
         transactionRepository.save(new Transaction(
-                "WITHDRAW",
-                amount,
-                "Amount Withdrawn",
-                user.getAccount().getAccountNumber(),
-                "-",
-                user
+            "WITHDRAW", amount, "Amount Withdrawn",
+            account.getAccountNumber(), "-", user
         ));
+
         return "₹" + amount + " withdrawn successfully!";
     }
 
@@ -141,24 +132,14 @@ public class UserServiceImpl implements UserService {
         accountRepository.save(sender.getAccount());
         accountRepository.save(receiver.getAccount());
 
-        // ✅ Save Sender Transaction (Sent To)
         transactionRepository.save(new Transaction(
-                "TRANSFER",
-                amount,
-                "Amount Sent",
-                sender.getAccount().getAccountNumber(),
-                receiver.getAccount().getAccountNumber(),
-                sender
+            "TRANSFER", amount, "Amount Sent",
+            sender.getAccount().getAccountNumber(), receiver.getAccount().getAccountNumber(), sender
         ));
 
-        // ✅ Save Receiver Transaction (Received From)
         transactionRepository.save(new Transaction(
-                "RECEIVED",
-                amount,
-                "Amount Received",
-                sender.getAccount().getAccountNumber(),
-                receiver.getAccount().getAccountNumber(),
-                receiver
+            "RECEIVED", amount, "Amount Received",
+            sender.getAccount().getAccountNumber(), receiver.getAccount().getAccountNumber(), receiver
         ));
 
         return "₹" + amount + " Transferred Successfully!";
@@ -174,8 +155,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<Transaction> getTransactions(String email) {
-        User user = userRepository.findByEmailIgnoreCase(email);
-        if (user == null) return null;
-        return transactionRepository.findByUserOrderByTimestampDesc(user);
+        User u = userRepository.findByEmailIgnoreCase(email);
+        if (u == null) return null;
+        return transactionRepository.findByUserOrderByTimestampDesc(u);
     }
 }
