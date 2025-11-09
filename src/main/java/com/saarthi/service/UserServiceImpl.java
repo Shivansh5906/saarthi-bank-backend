@@ -3,10 +3,8 @@ package com.saarthi.service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.saarthi.config.JwtUtil;
 import com.saarthi.dto.LoginRequest;
@@ -62,19 +60,12 @@ public class UserServiceImpl implements UserService {
     public String login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail());
 
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User not found!");
-        }
-
-        if (!user.getPassword().equals(request.getPassword())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect password!");
-        }
+        if (user == null) return "User not found!";
+        if (!user.getPassword().equals(request.getPassword())) return "Incorrect password!";
 
         String token = jwtUtil.generateToken(user.getEmail());
-
-        return token; // ✅ Only return token
+        return "Login Successful! Token: " + token;
     }
-
 
     // ✅ DEPOSIT
     @Transactional
@@ -110,43 +101,33 @@ public class UserServiceImpl implements UserService {
         return "₹" + amount + " withdrawn successfully! Remaining Balance: ₹" + account.getBalance();
     }
 
-    // ✅ FINAL FIXED TRANSFER
-    @Transactional
     @Override
     public String transfer(String senderEmail, String receiverAccountNumber, double amount) {
 
         User sender = userRepository.findByEmail(senderEmail);
         if (sender == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sender not found!");
+            throw new RuntimeException("Sender not found!");
         }
 
+        // ✅ Receiver account check
         User receiver = userRepository.findByAccount_AccountNumber(receiverAccountNumber)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "User not found with this Account Number!"
-                ));
+                .orElseThrow(() -> new RuntimeException("User not found with this Account Number!"));
 
+        // ✅ Balance check
         if (sender.getAccount().getBalance() < amount) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Insufficient Balance!"
-            );
+            throw new RuntimeException("Insufficient Balance!");
         }
 
-        // Update balances
+        // ✅ Transfer Amount
         sender.getAccount().setBalance(sender.getAccount().getBalance() - amount);
         receiver.getAccount().setBalance(receiver.getAccount().getBalance() + amount);
 
-        // Save accounts
-        accountRepository.save(sender.getAccount());
-        accountRepository.save(receiver.getAccount());
-
-        // Record transactions
-        transactionRepository.save(new Transaction("TRANSFER", amount, "Amount Transferred", sender));
-        transactionRepository.save(new Transaction("RECEIVED", amount, "Amount Received", receiver));
+        userRepository.save(sender);
+        userRepository.save(receiver);
 
         return "₹" + amount + " Transferred Successfully!";
     }
+
 
     // ✅ GET USER DETAILS
     @Override
