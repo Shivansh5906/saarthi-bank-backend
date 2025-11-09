@@ -24,7 +24,8 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("https://saarthi-frontend-qlgcwfsou-shivanshs-projects-a62d80c7.vercel.app")
+                        .allowedOrigins("https://saarthi-frontend-6cmnlyvle-shivanshs-projects-a62d80c7.vercel.app/"
+                        		+ "")
                         .allowedMethods("*")
                         .allowedHeaders("*")
                         .allowCredentials(true);
