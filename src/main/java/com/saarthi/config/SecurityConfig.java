@@ -25,12 +25,14 @@ public class SecurityConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOriginPatterns("https://*.vercel.app", "http://localhost:3000")
-                        .allowedMethods("*")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  // ✅ Preflight fix
                         .allowedHeaders("*")
+                        .exposedHeaders("Authorization") // ✅ Token allow
                         .allowCredentials(true);
             }
         };
     }
+
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
