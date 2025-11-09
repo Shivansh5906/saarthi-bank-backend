@@ -62,12 +62,19 @@ public class UserServiceImpl implements UserService {
     public String login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail());
 
-        if (user == null) return "User not found!";
-        if (!user.getPassword().equals(request.getPassword())) return "Incorrect password!";
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User not found!");
+        }
+
+        if (!user.getPassword().equals(request.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect password!");
+        }
 
         String token = jwtUtil.generateToken(user.getEmail());
-        return "Login Successful! Token: " + token;
+
+        return token; // ✅ Only return token
     }
+
 
     // ✅ DEPOSIT
     @Transactional
