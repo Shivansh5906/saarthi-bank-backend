@@ -2,11 +2,13 @@ package com.saarthi.controller;
 
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfWriter;
 
 import com.saarthi.config.JwtUtil;
 import com.saarthi.dto.DepositRequest;
@@ -17,7 +19,6 @@ import com.saarthi.model.Transaction;
 import com.saarthi.model.User;
 import com.saarthi.repository.UserRepository;
 import com.saarthi.service.UserService;
-import com.saarthi.service.PdfService;
 
 @RestController
 @RequestMapping("/user")
@@ -32,18 +33,14 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @Autowired
-    private PdfService pdfService;
-
-    private String extractEmail(String tokenHeader) {
-        String token = tokenHeader.replace("Bearer ", "").trim();
-        return jwtUtil.extractEmail(token).toLowerCase();
-    }
-
     @GetMapping("/me")
-    public UserResponse getUserDetails(@RequestHeader("Authorization") String tokenHeader) {
-        String email = extractEmail(tokenHeader);
+    public UserResponse getUserDetails(@RequestHeader("Authorization") String token) {
+
+        token = token.replace("Bearer ", "");
+        String email = jwtUtil.extractEmail(token);
+
         User user = userRepository.findByEmailIgnoreCase(email);
+
         return new UserResponse(
                 user.getId(),
                 user.getName(),
@@ -54,41 +51,75 @@ public class UserController {
     }
 
     @PostMapping("/deposit")
-    public String deposit(@RequestHeader("Authorization") String tokenHeader,
+    public String deposit(@RequestHeader("Authorization") String token,
                           @RequestBody DepositRequest request) {
-        String email = extractEmail(tokenHeader);
+
+        token = token.replace("Bearer ", "");
+        String email = jwtUtil.extractEmail(token);
+
         return userService.deposit(email, request.getAmount());
     }
 
     @PostMapping("/withdraw")
-    public String withdraw(@RequestHeader("Authorization") String tokenHeader,
+    public String withdraw(@RequestHeader("Authorization") String token,
                            @RequestBody WithdrawRequest request) {
-        String email = extractEmail(tokenHeader);
+
+        token = token.replace("Bearer ", "");
+        String email = jwtUtil.extractEmail(token);
+
         return userService.withdraw(email, request.getAmount());
     }
 
     @PostMapping("/transfer")
-    public String transferMoney(@RequestHeader("Authorization") String tokenHeader,
+    public String transferMoney(@RequestHeader("Authorization") String token,
                                 @RequestBody TransferRequest request) {
-        String email = extractEmail(tokenHeader);
+
+        token = token.replace("Bearer ", "");
+        String email = jwtUtil.extractEmail(token);
+
         return userService.transfer(email, request.getReceiverAccountNumber(), request.getAmount());
     }
 
     @GetMapping("/transactions")
-    public List<Transaction> getTransactions(@RequestHeader("Authorization") String tokenHeader) {
-        String email = extractEmail(tokenHeader);
+    public List<Transaction> getTransactions(@RequestHeader("Authorization") String token) {
+        token = token.replace("Bearer ", "");
+        String email = jwtUtil.extractEmail(token);
         return userService.getTransactions(email);
     }
 
-    // ✅ PDF Download Endpoint
+    // ✅ Download PDF Statement
     @GetMapping("/transactions/pdf")
-    public ResponseEntity<byte[]> downloadPdf(@RequestHeader("Authorization") String tokenHeader) {
-        String email = extractEmail(tokenHeader);
-        byte[] pdfBytes = pdfService.generatePdf(email);
+    public void downloadPdf(@RequestHeader("Authorization") String token, HttpServletResponse response) {
+        try {
+            token = token.replace("Bearer ", "");
+            String email = jwtUtil.extractEmail(token);
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Transaction_History.pdf")
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(pdfBytes);
+            List<Transaction> transactions = userService.getTransactions(email);
+
+            response.setContentType("application/pdf");
+            response.setHeader("Content-Disposition", "attachment; filename=Transaction_History.pdf");
+
+            Document document = new Document();
+            PdfWriter.getInstance(document, response.getOutputStream());
+
+            document.open();
+            document.add(new Paragraph("SAARTHI BANK - TRANSACTION STATEMENT\n\n"));
+
+            for (Transaction tx : transactions) {
+                String from = (tx.getFromAccount() != null) ? tx.getFromAccount() : "-";
+                String to = (tx.getToAccount() != null) ? tx.getToAccount() : "-";
+
+                String line = tx.getType() + " | ₹" + tx.getAmount() +
+                        " | " + from + " → " + to +
+                        " | " + tx.getTimestamp().toString();
+
+                document.add(new Paragraph(line));
+            }
+
+            document.close();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating PDF: " + e.getMessage());
+        }
     }
 }
