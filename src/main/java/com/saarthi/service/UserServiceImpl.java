@@ -86,7 +86,15 @@ public class UserServiceImpl implements UserService {
         account.setBalance(account.getBalance() + amount);
         accountRepository.save(account);
 
-        transactionRepository.save(new Transaction("DEPOSIT", amount, "Amount Deposited", user));
+        transactionRepository.save(new Transaction(
+                "DEPOSIT",
+                amount,
+                "Amount Deposited",
+                "-",
+                user.getAccount().getAccountNumber(),
+                user
+        ));
+
 
         return "₹" + amount + " deposited successfully!";
     }
@@ -104,8 +112,14 @@ public class UserServiceImpl implements UserService {
         account.setBalance(account.getBalance() - amount);
         accountRepository.save(account);
 
-        transactionRepository.save(new Transaction("WITHDRAW", amount, "Amount Withdrawn", user));
-
+        transactionRepository.save(new Transaction(
+                "WITHDRAW",
+                amount,
+                "Amount Withdrawn",
+                user.getAccount().getAccountNumber(),
+                "-",
+                user
+        ));
         return "₹" + amount + " withdrawn successfully!";
     }
 
@@ -127,8 +141,25 @@ public class UserServiceImpl implements UserService {
         accountRepository.save(sender.getAccount());
         accountRepository.save(receiver.getAccount());
 
-        transactionRepository.save(new Transaction("TRANSFER", amount, "Amount Sent", sender));
-        transactionRepository.save(new Transaction("RECEIVED", amount, "Amount Received", receiver));
+        // ✅ Save Sender Transaction (Sent To)
+        transactionRepository.save(new Transaction(
+                "TRANSFER",
+                amount,
+                "Amount Sent",
+                sender.getAccount().getAccountNumber(),
+                receiver.getAccount().getAccountNumber(),
+                sender
+        ));
+
+        // ✅ Save Receiver Transaction (Received From)
+        transactionRepository.save(new Transaction(
+                "RECEIVED",
+                amount,
+                "Amount Received",
+                sender.getAccount().getAccountNumber(),
+                receiver.getAccount().getAccountNumber(),
+                receiver
+        ));
 
         return "₹" + amount + " Transferred Successfully!";
     }
