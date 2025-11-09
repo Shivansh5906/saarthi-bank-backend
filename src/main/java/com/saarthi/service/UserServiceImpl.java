@@ -101,35 +101,33 @@ public class UserServiceImpl implements UserService {
         return "₹" + amount + " withdrawn successfully! Remaining Balance: ₹" + account.getBalance();
     }
 
-    // ✅ TRANSFER
-    @Transactional
     @Override
-    public String transfer(String senderEmail, String receiverAccNo, double amount) {
+    public String transfer(String senderEmail, String receiverAccountNumber, double amount) {
 
         User sender = userRepository.findByEmail(senderEmail);
-        if (sender == null) return "Sender not found!";
+        if (sender == null) {
+            throw new RuntimeException("Sender not found!");
+        }
 
-        Account senderAcc = sender.getAccount();
+        // ✅ Receiver account check
+        User receiver = userRepository.findByAccount_AccountNumber(receiverAccountNumber)
+                .orElseThrow(() -> new RuntimeException("User not found with this Account Number!"));
 
-        Account receiverAcc = accountRepository.findByAccountNumber(receiverAccNo);
-        if (receiverAcc == null) return "Receiver Account not found!";
+        // ✅ Balance check
+        if (sender.getAccount().getBalance() < amount) {
+            throw new RuntimeException("Insufficient Balance!");
+        }
 
-        if (senderAcc.getBalance() < amount) return "Insufficient Balance!";
+        // ✅ Transfer Amount
+        sender.getAccount().setBalance(sender.getAccount().getBalance() - amount);
+        receiver.getAccount().setBalance(receiver.getAccount().getBalance() + amount);
 
-        senderAcc.setBalance(senderAcc.getBalance() - amount);
-        receiverAcc.setBalance(receiverAcc.getBalance() + amount);
+        userRepository.save(sender);
+        userRepository.save(receiver);
 
-        accountRepository.save(senderAcc);
-        accountRepository.save(receiverAcc);
-
-        // Log for sender
-        transactionRepository.save(new Transaction("TRANSFER", amount, "Sent to " + receiverAccNo, sender));
-
-        // Log for receiver
-        transactionRepository.save(new Transaction("TRANSFER", amount, "Received from " + senderEmail, receiverAcc.getUser()));
-
-        return "Transfer Successful! ₹" + amount + " sent to Account " + receiverAccNo;
+        return "₹" + amount + " Transferred Successfully!";
     }
+
 
     // ✅ GET USER DETAILS
     @Override
