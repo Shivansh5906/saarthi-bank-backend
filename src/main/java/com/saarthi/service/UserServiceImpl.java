@@ -3,8 +3,10 @@ package com.saarthi.service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.saarthi.config.JwtUtil;
 import com.saarthi.dto.LoginRequest;
@@ -35,13 +37,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public String signup(SignupRequest request) {
 
-        if (userRepository.findByEmail(request.getEmail()) != null) {
-            return "Email already registered!";
+        if (userRepository.findByEmail(request.getEmail().toLowerCase()) != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already registered!");
         }
 
         User user = new User();
         user.setName(request.getName());
-        user.setEmail(request.getEmail());
+        user.setEmail(request.getEmail().toLowerCase()); // ✅ Email normalized
         user.setPassword(request.getPassword());
 
         userRepository.save(user);
@@ -58,21 +60,27 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail());
 
-        if (user == null) return "User not found!";
-        if (!user.getPassword().equals(request.getPassword())) return "Incorrect password!";
+        String email = request.getEmail().trim().toLowerCase(); // ✅ Normalize Email
+        User user = userRepository.findByEmail(email);
 
-        String token = jwtUtil.generateToken(user.getEmail());
-        return "Login Successful! Token: " + token;
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User Not Found!");
+        }
+
+        if (!user.getPassword().equals(request.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Incorrect Password!");
+        }
+
+        return jwtUtil.generateToken(user.getEmail()); // ✅ return only token
     }
 
-    // ✅ DEPOSIT
+    // ✅ Deposit
     @Transactional
     @Override
     public String deposit(String email, double amount) {
         User user = userRepository.findByEmail(email);
-        if (user == null) return "User not found!";
+        if (user == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User Not Found!");
 
         Account account = user.getAccount();
         account.setBalance(account.getBalance() + amount);
@@ -80,77 +88,66 @@ public class UserServiceImpl implements UserService {
 
         transactionRepository.save(new Transaction("DEPOSIT", amount, "Amount Deposited", user));
 
-        return "₹" + amount + " deposited successfully! New Balance: ₹" + account.getBalance();
+        return "₹" + amount + " deposited successfully!";
     }
 
-    // ✅ WITHDRAW
+    // ✅ Withdraw
     @Transactional
     @Override
     public String withdraw(String email, double amount) {
         User user = userRepository.findByEmail(email);
-        if (user == null) return "User not found!";
+        if (user == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User Not Found!");
 
         Account account = user.getAccount();
-        if (account.getBalance() < amount) return "Insufficient Balance!";
+        if (account.getBalance() < amount)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient Balance!");
 
         account.setBalance(account.getBalance() - amount);
         accountRepository.save(account);
 
         transactionRepository.save(new Transaction("WITHDRAW", amount, "Amount Withdrawn", user));
 
-        return "₹" + amount + " withdrawn successfully! Remaining Balance: ₹" + account.getBalance();
+        return "₹" + amount + " withdrawn successfully!";
     }
 
+    // ✅ Transfer
+    @Transactional
     @Override
     public String transfer(String senderEmail, String receiverAccountNumber, double amount) {
 
         User sender = userRepository.findByEmail(senderEmail);
-        if (sender == null) {
-            throw new RuntimeException("Sender not found!");
-        }
+        if (sender == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender Not Found!");
 
-        // ✅ Receiver account check
         User receiver = userRepository.findByAccount_AccountNumber(receiverAccountNumber)
-                .orElseThrow(() -> new RuntimeException("User not found with this Account Number!"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid Receiver Account Number!"));
 
-        // ✅ Balance check
-        if (sender.getAccount().getBalance() < amount) {
-            throw new RuntimeException("Insufficient Balance!");
-        }
+        if (sender.getAccount().getBalance() < amount)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient Balance!");
 
-        // ✅ Transfer Amount
         sender.getAccount().setBalance(sender.getAccount().getBalance() - amount);
         receiver.getAccount().setBalance(receiver.getAccount().getBalance() + amount);
 
-        userRepository.save(sender);
-        userRepository.save(receiver);
+        accountRepository.save(sender.getAccount());
+        accountRepository.save(receiver.getAccount());
+
+        transactionRepository.save(new Transaction("TRANSFER", amount, "Amount Sent", sender));
+        transactionRepository.save(new Transaction("RECEIVED", amount, "Amount Received", receiver));
 
         return "₹" + amount + " Transferred Successfully!";
     }
 
-
-    // ✅ GET USER DETAILS
     @Override
     public UserResponse getUserDetails(String email) {
         User user = userRepository.findByEmail(email);
         if (user == null) return null;
-
-        return new UserResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getAccount().getAccountNumber(),
-                user.getAccount().getBalance()
-        );
+        return new UserResponse(user.getId(), user.getName(), user.getEmail(),
+                user.getAccount().getAccountNumber(), user.getAccount().getBalance());
     }
 
-    // ✅ GET TRANSACTION HISTORY
     @Override
     public List<Transaction> getTransactions(String email) {
-
         User user = userRepository.findByEmail(email);
         if (user == null) return null;
-
         return transactionRepository.findByUserOrderByTimestampDesc(user);
     }
 }
