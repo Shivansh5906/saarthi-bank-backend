@@ -17,8 +17,12 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("https://saarthi-frontend-henna.vercel.app")
-                        .allowedMethods("*")
+                        // ✅ Both frontend URLs allowed (safe)
+                        .allowedOrigins(
+                                
+                                "https://saarthi-frontend-qlgcwfsou-shivanshs-projects-a62d80c7.vercel.app"
+                        )
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);
             }
@@ -32,8 +36,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.enable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // ✅ Correct endpoint now
-                        .anyRequest().authenticated()
+                        .requestMatchers("/auth/**").permitAll()  // Signup/Login free
+                        .requestMatchers("/user/**").authenticated() // User actions secured
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(httpBasic -> httpBasic.disable())
