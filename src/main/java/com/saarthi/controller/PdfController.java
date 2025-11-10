@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/pdf")
 public class PdfController {
 
     @Autowired
