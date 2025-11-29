@@ -37,7 +37,7 @@ public class ChatController {
 
             String data = list.stream()
                     .map(t -> t.getType() + " ₹" + t.getAmount())
-                    .collect(Collectors.joining("<br>"));
+                    .collect(Collectors.joining());
 
             return new ChatResponse("Last 5 Transactions" + data);
         }
