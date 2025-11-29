@@ -27,7 +27,7 @@ public class ChatController {
             var acc = accountRepo.findById(1L).orElse(null);
             if(acc == null) return new ChatResponse("No account found ❗");
 
-            return new ChatResponse("<b>Your balance is ₹" + acc.getBalance() + "</b>");
+            return new ChatResponse("Your balance is ₹" + acc.getBalance() );
         }
 
         // 2️⃣ LAST 5 TRANSACTIONS — clean output only
@@ -39,7 +39,7 @@ public class ChatController {
                     .map(t -> t.getType() + " ₹" + t.getAmount())
                     .collect(Collectors.joining("<br>"));
 
-            return new ChatResponse("<b>Last 5 Transactions</b><br>" + data);
+            return new ChatResponse("Last 5 Transactions" + data);
         }
 
         // 3️⃣ ACCOUNT DETAILS
@@ -50,9 +50,9 @@ public class ChatController {
             var user = acc.getUser();
 
             String response =
-                    "<b>Account Details</b><br>" +
-                    "Name: "+ user.getName() +"<br>" +
-                    "Acc No: "+ acc.getAccountNumber() +"<br>" +
+                    "Account Details" +
+                    "Name: "+ user.getName()  +
+                    "Acc No: "+ acc.getAccountNumber()  +
                     "Balance: ₹"+ acc.getBalance();
 
             return new ChatResponse(response);
@@ -60,7 +60,7 @@ public class ChatController {
 
         // 4️⃣ CONTACT
         if(msg.equals("contact")){
-            return new ChatResponse("<b>Email:</b> shivanshchitranshi1009@gmail.com<br><b>Phone:</b> +91 7388292550");
+            return new ChatResponse("Email: shivanshchitranshi1009@gmail.com Phone: +91 7388292550");
         }
 
         return new ChatResponse("Click a button — Balance / Transactions / Account Details / Contact");
