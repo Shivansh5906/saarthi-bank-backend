@@ -9,4 +9,5 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     // ✅ This returns ALL transactions of the user sorted newest first
     List<Transaction> findByUserOrderByTimestampDesc(User user);
+    List<Transaction> findTop5ByOrderByIdDesc();
 }
