@@ -28,22 +28,22 @@ public class ChatController {
         if(msg.equals("balance")){
             var acc = accountRepo.findById(1L).orElse(null);
             if(acc == null) return new ChatResponse("No account found ❗");
-            return new ChatResponse("💰 Your balance is: ₹" + acc.getBalance());
+            return new ChatResponse("Your balance is ₹" + acc.getBalance());
         }
 
-        // 2) LAST 5 TRANSACTIONS
+        // 2) LAST 5 TRANSACTIONS – simple clean format
         if(msg.equals("transactions")){
             var list = transactionRepo.findTop5ByOrderByIdDesc();
-            if(list.isEmpty()) return new ChatResponse("No transactions found ❗");
+            if(list.isEmpty()) return new ChatResponse("No recent transactions ❗");
 
             String data = list.stream()
-                    .map(t -> "• "+t.getType()+" ₹"+t.getAmount())
+                    .map(t -> t.getType() + " ₹" + t.getAmount())
                     .collect(Collectors.joining("\n"));
 
-            return new ChatResponse("📄 Last 5 transactions:\n\n" + data);
+            return new ChatResponse(data); // <-- clean output only
         }
 
-        // 3) ACCOUNT DETAILS
+        // 3) ACCOUNT DETAILS (single txt reply)
         if(msg.equals("account details")){
             var acc = accountRepo.findById(1L).orElse(null);
             if(acc == null) return new ChatResponse("Account not found ❗");
@@ -51,23 +51,19 @@ public class ChatController {
             var user = acc.getUser();
 
             return new ChatResponse(
-                    "🏦 Account Details:\n"
-                    + "Name: " + user.getName() + "\n"
-                    + "Account No: " + acc.getAccountNumber() + "\n"
-                    + "Email: " + user.getEmail() + "\n"
-                    + "Balance: ₹" + acc.getBalance()
+                    "Name: "+ user.getName() +
+                    "\nAcc No: "+ acc.getAccountNumber() +
+                    "\nBalance: ₹"+ acc.getBalance()
             );
         }
 
-        // 4) CONTACT SUPPORT
+        // 4) CONTACT
         if(msg.equals("contact")){
             return new ChatResponse(
-                "📞 Saarthi Bank Support\n"
-                + "Email: shivanshchitranshi1009@gmail.com\n"
-                + "Phone: +91 7388292550"
+                "Email: support@saarthibank.com\nPhone: +91 98765-43210"
             );
         }
 
-        return new ChatResponse("⚠ Please tap a button — Balance / Transactions / Account Details / Contact");
+        return new ChatResponse("Click a button — Balance / Transactions / Account Details / Contact");
     }
 }
